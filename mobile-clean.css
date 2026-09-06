@@ -1,4 +1,19 @@
-/* Mobile portrait cleanup for Tabellhjälte */
+/* Tabellhjälte – stall, garderob och mobilanpassning v12 */
+.stableHotspot{
+  position:absolute;right:16px;top:16px;z-index:9;
+  display:flex;align-items:center;gap:9px;
+  padding:10px 12px;border:1px solid rgba(92,68,44,.18);border-radius:17px;
+  background:rgba(255,250,244,.9);color:#2c261f;box-shadow:0 8px 22px rgba(70,52,31,.16);
+  backdrop-filter:blur(8px);cursor:pointer;text-align:left;
+}
+.stableHotspot .stableIcon{font-size:26px;line-height:1}
+.stableHotspot b{display:block;font-size:14px;line-height:1.05}
+.stableHotspot small{display:block;font-size:9px;font-weight:800;opacity:.65;margin-top:3px;white-space:nowrap}
+[data-theme=dark] .stableHotspot{background:rgba(30,35,31,.9);color:#f5efe7;border-color:rgba(255,255,255,.12)}
+.wardrobeIntro{margin:0 0 10px;padding:11px 12px;border:1px solid var(--line);border-radius:16px;background:var(--surface2)}
+.wardrobeIntro b{display:block;font-size:14px}
+.wardrobeIntro span{display:block;margin-top:3px;color:var(--muted);font-size:11px;font-weight:750;line-height:1.35}
+
 @media (max-width: 720px){
   .app{padding:8px 10px 26px}
 
@@ -20,7 +35,7 @@
   .navbtn{min-height:36px;border-radius:999px;padding:0 9px;font-size:12px}
   #homeBtn{display:none}
   #themeBtn{width:36px;padding:0}
-  #stableBtn{padding:0 10px}
+  #stableBtn{padding:0 9px}
 
   .panel{border-radius:20px}
   .panel+.panel{margin-top:10px}
@@ -44,8 +59,12 @@
     bottom:11px;
     justify-content:flex-start;
   }
-  #home .heroButtons #openStable{display:none}
-  #home .heroButtons .btn{min-width:128px;padding:10px 18px}
+  #home .heroButtons #openStable{display:inline-flex}
+  #home .heroButtons .btn{min-width:118px;padding:10px 14px}
+  #home .stableHotspot{right:10px;top:10px;padding:8px 9px;border-radius:14px}
+  #home .stableHotspot .stableIcon{font-size:22px}
+  #home .stableHotspot b{font-size:12px}
+  #home .stableHotspot small{font-size:8px}
 
   #home .summary{
     grid-template-columns:repeat(3,minmax(0,1fr));
@@ -74,6 +93,7 @@
 
   #stable .head{align-items:center;margin-bottom:8px}
   #stable .head h2{font-size:20px}
+  #stable .head p{display:block;font-size:10px;line-height:1.25;max-width:220px}
   #stable .head>div:last-child{display:flex;gap:6px}
   #stable .stableGrid{display:block}
   #stable .preview{position:static}
@@ -89,6 +109,9 @@
   #stable .ponyLabel{left:9px;bottom:8px;padding:6px 9px;font-size:10px}
   #stable .nameRow{margin:8px 0 12px}
   #stable .nameRow input{padding:10px}
+  #stable .wardrobeIntro{padding:9px 10px;margin-bottom:8px}
+  #stable .wardrobeIntro b{font-size:12px}
+  #stable .wardrobeIntro span{font-size:9px}
   #stable .tabs{gap:5px;margin-bottom:7px}
   #stable .tab{padding:8px 10px;font-size:12px}
   #stable .sectionTitle{margin:10px 0 6px;font-size:10px}
@@ -113,8 +136,9 @@
 @media (max-width: 390px){
   .brand b{font-size:18px}
   .chip{padding:0 7px}
-  #stableBtn{padding:0 8px}
+  #stableBtn{padding:0 7px;font-size:11px}
   #home .hero{min-height:300px}
   #home .hero .scene svg{width:100%;transform:translateY(-18px)}
   #stable .previewScene{min-height:290px}
+  #home .stableHotspot small{display:none}
 }
