@@ -2,15 +2,74 @@
 const Economy={
  extend(PC,HC){
   for(const catalog of [PC,HC])for(const items of Object.values(catalog))for(const item of items)item.price=item.legend?900:item.price*10;
-  PC.hair=[{id:'hair-original',name:'Vanlig hästsvans',c:'transparent',price:0},...['Långt vågigt hår','Flätad hästsvans'].flatMap((name,style)=>[['Kastanj','#85502b'],['Mörkbrun','#4b2c20'],['Koppar','#bd703b'],['Blond','#dcba79']].map(([color,c],n)=>({id:'hair-'+style+'-'+n,name:name+' · '+color,c,style,price:240+style*100+n*80})))];
-  HC.mane=[{id:'mane-original',name:'Naturlig man',c:'transparent',price:0},...['Flätad man','Böljande man'].flatMap((name,style)=>[['Elfenben','#f4e3bf'],['Guld','#d4b16b'],['Silver','#c7c7d3'],['Rosa','#e8a5cd']].map(([color,c],n)=>({id:'mane-'+style+'-'+n,name:name+' · '+color,c,style:style+2,price:300+style*100+n*90})))];
+
+  PC.hair=[
+   {id:'hair-original',name:'Vanlig hästsvans',c:'transparent',price:0},
+   ...['Långt vågigt hår','Flätad hästsvans'].flatMap((name,style)=>
+    [['Kastanj','#85502b'],['Mörkbrun','#4b2c20'],['Koppar','#bd703b'],['Blond','#dcba79']]
+     .map(([color,c],n)=>({id:'hair-'+style+'-'+n,name:name+' · '+color,c,style,price:240+style*100+n*80}))
+   )
+  ];
+
+  // Hästens manstil och färg är två separata val.
+  HC.mane=[
+   {id:'mane-original',name:'Naturlig man',c:'transparent',style:-1,price:0},
+   {id:'mane-braided',name:'Flätad man',c:'transparent',style:2,price:300},
+   {id:'mane-wavy',name:'Böljande man',c:'transparent',style:3,price:400}
+  ];
+  HC.maneColor=[
+   {id:'maneColor-ivory',name:'Ljus / natur',c:'#f2e7cf',original:true,price:0},
+   {id:'maneColor-white',name:'Vit',c:'#eeeae2',price:0},
+   {id:'maneColor-flaxen',name:'Linfärgad',c:'#d8b877',price:0},
+   {id:'maneColor-brown',name:'Brun',c:'#795139',price:0},
+   {id:'maneColor-dark',name:'Mörkbrun',c:'#47342c',price:0},
+   {id:'maneColor-black',name:'Svart',c:'#29292b',price:0},
+   {id:'maneColor-gray',name:'Grå',c:'#9d9b98',price:0}
+  ];
+  HC.tailColor=[
+   {id:'tailColor-ivory',name:'Ljus / natur',c:'#f2e7cf',original:true,price:0},
+   {id:'tailColor-white',name:'Vit',c:'#eeeae2',price:0},
+   {id:'tailColor-flaxen',name:'Linfärgad',c:'#d8b877',price:0},
+   {id:'tailColor-brown',name:'Brun',c:'#795139',price:0},
+   {id:'tailColor-dark',name:'Mörkbrun',c:'#47342c',price:0},
+   {id:'tailColor-black',name:'Svart',c:'#29292b',price:0},
+   {id:'tailColor-gray',name:'Grå',c:'#9d9b98',price:0}
+  ];
+
   const sets=[['ocean','Hav','#287eab'],['purple','Ametist','#8952ba'],['cherry','Körsbär','#b83257'],['mint','Mint','#58c9b3'],['sun','Solros','#e4b52d'],['ice','Isblå','#a0dce9'],['forest','Skog','#325b43'],['pearl','Pärla','#eee4ec'],['night','Midnatt','#333958'],['coral','Korall','#ef7965'],['royal','Kunglig','#604f9e'],['candy','Sockervadd','#f599cc']];
   const names={top:'ridtröja',bottom:'ridbyxor',shoes:'stövlar',pad:'sadel & schabrak',wraps:'benskydd',bridle:'träns',accessory:'rosett'};
-  for(const [key,items] of Object.entries({...PC,...HC}).filter(([key])=>names[key]))sets.forEach(([id,name,c],n)=>items.push({id:key+'-'+id,name:name+' · '+names[key],c,price:180+n*55+(key==='pad'?180:0),legend:0}));
+  for(const [key,items] of Object.entries({...PC,...HC}).filter(([key])=>names[key]))
+   sets.forEach(([id,name,c],n)=>items.push({id:key+'-'+id,name:name+' · '+names[key],c,price:180+n*55+(key==='pad'?180:0),legend:0}));
  },
  migrate(s){
-  if(s.economyVersion!==2){s.economyVersion=2;s.care={piles:1,lastPoop:Date.now(),rounds:0,tool:'hands',tools:['hands'],food:{carrot:0,apple:0,hay:0},manure:0,paint:0,art:[],tickets:0,feeds:0};}
-  for(const [key,id] of [['hair','hair-original'],['mane','mane-original']]){if(!s.owned.includes(id))s.owned.push(id);if(!s.equipped[key])s.equipped[key]=id;}
+  s.equipped=s.equipped||{};
+  s.owned=Array.isArray(s.owned)?s.owned:[];
+
+  if(!s.care)s.care={piles:1,lastPoop:Date.now(),rounds:0,tool:'hands',tools:['hands'],food:{carrot:0,apple:0,hay:0},manure:0,paint:0,art:[],tickets:0,feeds:0};
+
+  // Flytta gamla färgkodade man-val till nya separata val utan att tappa det användaren hade.
+  const oldMane=s.equipped.mane||'mane-original';
+  if(/^mane-0-/.test(oldMane))s.equipped.mane='mane-braided';
+  else if(/^mane-1-/.test(oldMane))s.equipped.mane='mane-wavy';
+  else if(!['mane-original','mane-braided','mane-wavy'].includes(oldMane))s.equipped.mane='mane-original';
+
+  if(s.owned.some(id=>/^mane-0-/.test(id))&&!s.owned.includes('mane-braided'))s.owned.push('mane-braided');
+  if(s.owned.some(id=>/^mane-1-/.test(id))&&!s.owned.includes('mane-wavy'))s.owned.push('mane-wavy');
+
+  if(!s.equipped.maneColor)s.equipped.maneColor='maneColor-ivory';
+  if(!s.equipped.tailColor)s.equipped.tailColor='tailColor-ivory';
+  if(!s.equipped.coat)s.equipped.coat='coat-isabell';
+
+  const freebies=[
+   'hair-original','mane-original',
+   'coat-isabell','coat-fux','coat-brown','coat-darkbrown','coat-black','coat-gray',
+   'maneColor-ivory','maneColor-white','maneColor-flaxen','maneColor-brown','maneColor-dark','maneColor-black','maneColor-gray',
+   'tailColor-ivory','tailColor-white','tailColor-flaxen','tailColor-brown','tailColor-dark','tailColor-black','tailColor-gray'
+  ];
+  for(const id of freebies)if(!s.owned.includes(id))s.owned.push(id);
+  if(!s.equipped.hair)s.equipped.hair='hair-original';
+
+  s.economyVersion=3;
   return s;
  },
  reward(mode,correct,first,passed){return Math.floor(correct/2)+(passed?(first?15:7):0);}
