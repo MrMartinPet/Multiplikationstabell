@@ -124,13 +124,12 @@ function atlasHairLayer(style,color){
 function compose(colors){
  const key=JSON.stringify(colors);if(paintCache.has(key))return paintCache.get(key);
  const c=make(),ctx=c.getContext('2d');ctx.drawImage(base,0,0,W,H);
- for(const k of ['coat','mane','tail']){const layer=regionLayer(k,colors[k]);if(layer)ctx.drawImage(layer,0,0)}
+ // Hästen behåller alltid originalfärgen från grundillustrationen.
  for(const k of ['top','bottom','shoes'])if(/^#[0-9a-f]{6}$/i.test(colors[k]||''))ctx.drawImage(clothingLayer(k,colors[k]),0,0);
  for(const k of ['pad','wraps','bridle','accessory'])if(colors[k]&&colors[k]!=='transparent')ctx.drawImage(gearLayer(k,colors[k]),0,0);
  if(colors.playerHair&&colors.playerHair.c!=='transparent'){const l=atlasHairLayer(colors.playerHair.style,colors.playerHair.c);if(l)ctx.drawImage(l,0,0)}
  if(colors.maneStyle&&colors.maneStyle.style>=2){
-  const ccol=colors.mane?.original?'#f2e7cf':colors.mane?.c||'#f2e7cf';
-  const l=atlasHairLayer(colors.maneStyle.style,ccol);if(l)ctx.drawImage(l,0,0);
+  const l=atlasHairLayer(colors.maneStyle.style,'#f2e7cf');if(l)ctx.drawImage(l,0,0);
  }
  if(paintCache.size>5)paintCache.delete(paintCache.keys().next().value);paintCache.set(key,c);return c
 }
@@ -140,9 +139,6 @@ function schedule(id,colors,crop){
 }
 function render(options){
  const id='stable-canvas-'+(++serial),colors={};
- colors.coat=options.find(options.equipped.coat);
- colors.mane=options.find(options.equipped.maneColor);
- colors.tail=options.find(options.equipped.tailColor);
  colors.maneStyle=options.find(options.equipped.mane);
  colors.playerHair=options.find(options.equipped.hair);
  for(const k of Object.keys(clothing)){const item=options.find(options.equipped[k]);colors[k]=item?.c||'transparent'}
@@ -152,11 +148,7 @@ function render(options){
 }
 function thumbnail(category,item){
  const id='item-canvas-'+(++serial),crop=crops[category]||[500,110,455,385],colors={};
- if(category==='coat')colors.coat=item;
- else if(category==='maneColor')colors.mane=item;
- else if(category==='tailColor')colors.tail=item;
- else if(category==='mane'){
-  colors.mane={original:true,c:'#f2e7cf'};
+ if(category==='mane'){
   colors.maneStyle=item;
  }else if(category==='hair')colors.playerHair=item;
  else colors[category]=item.c;
