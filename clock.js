@@ -52,7 +52,7 @@ section.innerHTML =
       '<button type="button" data-period="am" class="active">00–11</button>'+
       '<button type="button" data-period="pm">12–23</button>'+
     '</div>'+
-    '<div class="clock-adjust">'+
+    '<div class="clock-adjust" id="clockAdjust">'+
       '<button type="button" data-step="-5">−5 min</button>'+
       '<button type="button" data-step="-1">−1 min</button>'+
       '<button type="button" data-step="1">+1 min</button>'+
