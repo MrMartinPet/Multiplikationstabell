@@ -32,6 +32,15 @@ const crops={top:[239,329,289,277],bottom:[291,549,191,270],shoes:[239,768,241,2
 const make=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;return c};
 let base,atlas,saddleSet,hairAtlas,ready,serial=0;
 const layers=new Map(),paintCache=new Map();
+const horseCoatMasks=[
+ [[462,163],[540,145],[625,165],[700,215],[705,290],[668,350],[610,405],[535,390],[480,345],[455,280]],
+ [[610,290],[720,280],[820,340],[875,470],[842,620],[760,715],[680,660],[625,520]],
+ [[720,390],[900,330],[1130,350],[1300,430],[1340,560],[1295,710],[1190,790],[930,800],[790,735],[740,620]],
+ [[690,650],[775,650],[780,805],[765,915],[748,990],[690,970],[700,870]],
+ [[795,670],[880,670],[885,805],[875,900],[865,985],[805,980],[810,875]],
+ [[1060,650],[1145,650],[1145,795],[1135,885],[1128,950],[1075,940],[1082,855]],
+ [[1185,645],[1275,640],[1280,790],[1270,885],[1260,955],[1208,945],[1210,850]]
+];
 function path(ctx,points){ctx.moveTo(points[0][0],points[0][1]);for(let i=1;i<points.length;i++)ctx.lineTo(points[i][0],points[i][1]);ctx.closePath()}
 function load(src){return new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=()=>reject(new Error('Bilden kunde inte laddas'));i.src=ROOT+src})}
 function init(){return ready||(ready=Promise.all([load('stable-base-corrected.webp'),load('equipment-atlas.webp'),load('saddle-set.webp'),load('hairstyles-atlas.png')]).then(([b,a,s,h])=>{base=b;atlas=a;saddleSet=s;hairAtlas=h}))}
@@ -39,6 +48,23 @@ function rgb(hex){return [1,3,5].map(n=>parseInt(hex.slice(n,n+2),16))}
 function tint(canvas,color,reference,leather){const ctx=canvas.getContext('2d'),im=ctx.getImageData(0,0,W,H),p=im.data,c=rgb(color);for(let i=0;i<p.length;i+=4){if(!p[i+3])continue;const max=Math.max(p[i],p[i+1],p[i+2]),min=Math.min(p[i],p[i+1],p[i+2]);if(leather===true&&max-min<18)continue;if(leather==="saddle"&&!(p[i+1]>p[i]*1.015&&p[i+2]>p[i]*.60))continue;let l=(p[i]*.2126+p[i+1]*.7152+p[i+2]*.0722)/reference;l=Math.min(1.75,l);for(let j=0;j<3;j++)p[i+j]=Math.min(255,c[j]*l)}ctx.putImageData(im,0,0);return canvas}
 function clothingLayer(key,color){const cacheKey=key+color;if(layers.has(cacheKey))return layers.get(cacheKey);const c=make(),ctx=c.getContext('2d');ctx.save();ctx.beginPath();clothing[key].polygons.forEach(p=>path(ctx,p));ctx.clip();ctx.drawImage(base,0,0,W,H);ctx.restore();if(key==="top"||key==="bottom"){const im=ctx.getImageData(0,0,W,H),d=im.data;for(let i=0;i<d.length;i+=4)if(key==="top"?(d[i+1]<d[i]*.93||d[i+1]<d[i+2]*1.02):(d[i]>d[i+2]*1.12&&d[i]>d[i+1]*1.12))d[i+3]=0;ctx.putImageData(im,0,0)}tint(c,color,clothing[key].light);if(layers.size>=5)layers.delete(layers.keys().next().value);layers.set(cacheKey,c);return c}
 function gearLayer(key,color){const cacheKey=key+color;if(layers.has(cacheKey))return layers.get(cacheKey);const c=make(),ctx=c.getContext('2d');if(key==='pad')ctx.drawImage(saddleSet,858,337);for(const piece of gear[key].pieces){const cut=make(),cx=cut.getContext('2d');cx.save();cx.beginPath();path(cx,piece.poly);if(piece.hole)path(cx,piece.hole);cx.clip('evenodd');cx.drawImage(atlas,0,0,W,H);cx.restore();ctx.drawImage(cut,...piece.box,...piece.dest)}tint(c,color,gear[key].light,key==='pad'?'saddle':gear[key].leather);if(layers.size>=5)layers.delete(layers.keys().next().value);layers.set(cacheKey,c);return c}
+function horseCoatLayer(color){
+ const cacheKey='coat-'+color;if(layers.has(cacheKey))return layers.get(cacheKey);
+ const c=make(),ctx=c.getContext('2d');
+ ctx.save();ctx.beginPath();horseCoatMasks.forEach(p=>path(ctx,p));ctx.clip();ctx.drawImage(base,0,0,W,H);ctx.restore();
+ const im=ctx.getImageData(0,0,W,H),d=im.data,target=rgb(color);
+ for(let i=0;i<d.length;i+=4){
+  if(!d[i+3])continue;
+  const r=d[i],g=d[i+1],b=d[i+2],max=Math.max(r,g,b),min=Math.min(r,g,b),lum=r*.2126+g*.7152+b*.0722;
+  const warm=r>g*1.015&&g>b*.98&&max-min>10&&lum>58;
+  const neutral=Math.abs(r-g)<18&&Math.abs(g-b)<18&&lum>105;
+  if(!warm&&!neutral){d[i+3]=0;continue}
+  const shade=Math.max(.20,Math.min(1.55,lum/158));
+  for(let j=0;j<3;j++)d[i+j]=Math.min(255,target[j]*shade);
+ }
+ ctx.putImageData(im,0,0);
+ if(layers.size>=7)layers.delete(layers.keys().next().value);layers.set(cacheKey,c);return c;
+}
 
 const hairCrops=[[78,235,315,385],[795,260,175,360],[186,729,432,505],[812,732,408,506]];
 const hairDest=[[187,260,159,272],[208,266,110,260],[679,192,252,294],[684,187,250,310]];
@@ -50,13 +76,13 @@ function hairLayer(item){
  for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;const warmth=d[i]-d[i+2];if(warmth<5){d[i+3]=0;continue;}const luminance=(d[i]*.2126+d[i+1]*.7152+d[i+2]*.0722)/(item.style<2?105:215);for(let j=0;j<3;j++)d[i+j]=Math.min(255,target[j]*luminance);d[i+3]*=Math.min(1,(warmth-5)/10);}
  ctx.putImageData(im,0,0);const [dx,dy,dw,dh]=hairDest[item.style];ctx.globalCompositeOperation='destination-in';const fade=ctx.createLinearGradient(0,dy,0,dy+38);fade.addColorStop(0,'transparent');fade.addColorStop(1,'black');ctx.fillStyle=fade;ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over';if(layers.size>=5)layers.delete(layers.keys().next().value);layers.set(cacheKey,c);return c;
 }
-function compose(colors){const key=JSON.stringify(colors);if(paintCache.has(key))return paintCache.get(key);const c=make(),ctx=c.getContext('2d');ctx.drawImage(base,0,0,W,H);for(const k of ['top','bottom','shoes'])if(/^#[0-9a-f]{6}$/i.test(colors[k]||''))ctx.drawImage(clothingLayer(k,colors[k]),0,0);for(const k of ['pad','wraps','bridle','accessory'])if(colors[k]&&colors[k]!=='transparent')ctx.drawImage(gearLayer(k,colors[k]),0,0);
+function compose(colors){const key=JSON.stringify(colors);if(paintCache.has(key))return paintCache.get(key);const c=make(),ctx=c.getContext('2d');ctx.drawImage(base,0,0,W,H);if(/^#[0-9a-f]{6}$/i.test(colors.coat||''))ctx.drawImage(horseCoatLayer(colors.coat),0,0);for(const k of ['top','bottom','shoes'])if(/^#[0-9a-f]{6}$/i.test(colors[k]||''))ctx.drawImage(clothingLayer(k,colors[k]),0,0);for(const k of ['pad','wraps','bridle','accessory'])if(colors[k]&&colors[k]!=='transparent')ctx.drawImage(gearLayer(k,colors[k]),0,0);
 for(const k of ['hair','mane'])if(colors[k]&&colors[k].c!=='transparent')ctx.drawImage(hairLayer(colors[k]),0,0);
 // The fitted raster set already excludes the foreground mane.
 if(paintCache.size>=3)paintCache.delete(paintCache.keys().next().value);paintCache.set(key,c);return c}
 function escape(s){return String(s).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
 function schedule(id,colors,crop){queueMicrotask(()=>{init().then(()=>{const target=document.getElementById(id);if(!target)return;const ctx=target.getContext('2d');ctx.clearRect(0,0,target.width,target.height);const source=compose(colors);if(crop){const [x,y,w,h]=crop;ctx.drawImage(source,x,y,w,h,0,0,target.width,target.height)}else ctx.drawImage(source,0,0,target.width,target.height)}).catch(()=>{const el=document.getElementById(id);if(el&&!crop){const status=document.createElement('span');status.className='scene-status';status.textContent='Bilden kunde inte laddas. Ladda om sidan.';el.parentElement.append(status)}})})}
-function render(options){const id='stable-canvas-'+(++serial),colors={};for(const k of [...Object.keys(clothing),...Object.keys(gear)]){const item=options.find(options.equipped[k]);colors[k]=item?.c||'transparent'}for(const k of ['hair','mane']){const item=options.find(options.equipped[k]);if(item&&item.c!=='transparent')colors[k]=item;}schedule(id,colors);return `<canvas id="${id}" class="stable-paint" width="${W}" height="${H}" role="img" aria-label="${escape(options.playerName)} och ${escape(options.horseName)} i stallet, med dina valda kläder och tillbehör" style="background:center/cover url('${ROOT}stable-base-corrected.webp')"></canvas><div class="stable-title">♥ ${escape(options.stallName)} ♥</div>`}
-function thumbnail(category,item){if(item.c==='transparent')return '<span class="empty-preview" aria-hidden="true">∅</span>';const id='item-canvas-'+(++serial),crop=crops[category]||(category==='hair'?[175,150,325,430]:[500,110,455,385]),colors={};colors[category]=['hair','mane'].includes(category)?item:item.c;schedule(id,colors,crop);return `<canvas id="${id}" class="item-preview" width="${Math.round(180*crop[2]/crop[3])}" height="180" aria-hidden="true"></canvas>`}
+function render(options){const id='stable-canvas-'+(++serial),colors={};const coat=options.find(options.equipped.coat);if(coat)colors.coat=coat.c;for(const k of [...Object.keys(clothing),...Object.keys(gear)]){const item=options.find(options.equipped[k]);colors[k]=item?.c||'transparent'}for(const k of ['hair','mane']){const item=options.find(options.equipped[k]);if(item&&item.c!=='transparent')colors[k]=item;}schedule(id,colors);return `<canvas id="${id}" class="stable-paint" width="${W}" height="${H}" role="img" aria-label="${escape(options.playerName)} och ${escape(options.horseName)} i stallet, med dina valda kläder och tillbehör" style="background:center/cover url('${ROOT}stable-base-corrected.webp')"></canvas><div class="stable-title">♥ ${escape(options.stallName)} ♥</div>`}
+function thumbnail(category,item){if(item.c==='transparent')return '<span class="empty-preview" aria-hidden="true">∅</span>';const id='item-canvas-'+(++serial),crop=crops[category]||(category==='coat'?[455,135,850,760]:category==='hair'?[175,150,325,430]:[500,110,455,385]),colors={};colors[category]=['hair','mane'].includes(category)?item:item.c;schedule(id,colors,crop);return `<canvas id="${id}" class="item-preview" width="${Math.round(180*crop[2]/crop[3])}" height="180" aria-hidden="true"></canvas>`}
 global.StableArt={render,thumbnail,ready:init,compose,_masks:{clothing,gear},_size:[W,H]};
 })(window);
