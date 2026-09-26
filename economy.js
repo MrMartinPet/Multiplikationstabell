@@ -17,24 +17,6 @@ const Economy={
    {id:'mane-braided',name:'Flätad man',c:'transparent',style:2,price:300},
    {id:'mane-wavy',name:'Böljande man',c:'transparent',style:3,price:400}
   ];
-  HC.maneColor=[
-   {id:'maneColor-ivory',name:'Ljus / natur',c:'#f2e7cf',original:true,price:0},
-   {id:'maneColor-white',name:'Vit',c:'#eeeae2',price:0},
-   {id:'maneColor-flaxen',name:'Linfärgad',c:'#d8b877',price:0},
-   {id:'maneColor-brown',name:'Brun',c:'#795139',price:0},
-   {id:'maneColor-dark',name:'Mörkbrun',c:'#47342c',price:0},
-   {id:'maneColor-black',name:'Svart',c:'#29292b',price:0},
-   {id:'maneColor-gray',name:'Grå',c:'#9d9b98',price:0}
-  ];
-  HC.tailColor=[
-   {id:'tailColor-ivory',name:'Ljus / natur',c:'#f2e7cf',original:true,price:0},
-   {id:'tailColor-white',name:'Vit',c:'#eeeae2',price:0},
-   {id:'tailColor-flaxen',name:'Linfärgad',c:'#d8b877',price:0},
-   {id:'tailColor-brown',name:'Brun',c:'#795139',price:0},
-   {id:'tailColor-dark',name:'Mörkbrun',c:'#47342c',price:0},
-   {id:'tailColor-black',name:'Svart',c:'#29292b',price:0},
-   {id:'tailColor-gray',name:'Grå',c:'#9d9b98',price:0}
-  ];
 
   const sets=[['ocean','Hav','#287eab'],['purple','Ametist','#8952ba'],['cherry','Körsbär','#b83257'],['mint','Mint','#58c9b3'],['sun','Solros','#e4b52d'],['ice','Isblå','#a0dce9'],['forest','Skog','#325b43'],['pearl','Pärla','#eee4ec'],['night','Midnatt','#333958'],['coral','Korall','#ef7965'],['royal','Kunglig','#604f9e'],['candy','Sockervadd','#f599cc']];
   const names={top:'ridtröja',bottom:'ridbyxor',shoes:'stövlar',pad:'sadel & schabrak',wraps:'benskydd',bridle:'träns',accessory:'rosett'};
@@ -56,20 +38,18 @@ const Economy={
   if(s.owned.some(id=>/^mane-0-/.test(id))&&!s.owned.includes('mane-braided'))s.owned.push('mane-braided');
   if(s.owned.some(id=>/^mane-1-/.test(id))&&!s.owned.includes('mane-wavy'))s.owned.push('mane-wavy');
 
-  if(!s.equipped.maneColor)s.equipped.maneColor='maneColor-ivory';
-  if(!s.equipped.tailColor)s.equipped.tailColor='tailColor-ivory';
-  if(!s.equipped.coat)s.equipped.coat='coat-isabell';
+  // Hästen använder alltid originalfärgen. Gamla färgval ignoreras.
+  delete s.equipped.coat;
+  delete s.equipped.maneColor;
+  delete s.equipped.tailColor;
 
   const freebies=[
-   'hair-original','mane-original',
-   'coat-isabell','coat-fux','coat-brown','coat-darkbrown','coat-black','coat-gray',
-   'maneColor-ivory','maneColor-white','maneColor-flaxen','maneColor-brown','maneColor-dark','maneColor-black','maneColor-gray',
-   'tailColor-ivory','tailColor-white','tailColor-flaxen','tailColor-brown','tailColor-dark','tailColor-black','tailColor-gray'
+   'hair-original','mane-original'
   ];
   for(const id of freebies)if(!s.owned.includes(id))s.owned.push(id);
   if(!s.equipped.hair)s.equipped.hair='hair-original';
 
-  s.economyVersion=3;
+  s.economyVersion=4;
   return s;
  },
  reward(mode,correct,first,passed){return Math.floor(correct/2)+(passed?(first?15:7):0);}
@@ -82,8 +62,8 @@ function careRender(){
  careTick();const c=S.care;
  for(const id of ['homeCare','stableCare']){
  const el=$(id);if(!el)continue;const marketOpen=el.querySelector(".market")?.open;
- el.innerHTML=`<h2>Sköt om ${esc(S.horseName||'din ponny')}</h2><p>${c.piles?'💩 '.repeat(c.piles)+'Mocka innan nästa tabell.':'✨ Rent i stallet – redo att träna!'}</p><p class="care-note">Händer: tvätt kostar upp till 3 mynt per hög. Spade: 1 mynt. Grep: gratis, gödseln sparas.</p><div class="care-buttons">${[['hands','🙌 Händer'],['shovel','🥄 Liten spade'],['fork','🔱 Grep']].map(([key,label])=>`<button class="btn ${c.tool===key?'soft':''}" data-tool="${key}">${label}${c.tools.includes(key)?(c.tool===key?' ✓':''):' · '+(key==='shovel'?90:300)+' 🪙'}</button>`).join('')}</div><button class="btn primary" data-clean ${c.piles?'':'disabled'}>Mocka en hög${c.piles?' 💩':''}</button><h3>Matförråd</h3><div class="care-food">${Object.entries(Food).map(([key,f])=>`<div><b>${f.icon} ${f.name} · ${c.food[key]} st</b><button class="btn" data-food-buy="${key}">Köp · ${f.price} 🪙</button><button class="btn soft" data-feed="${key}" ${c.food[key]?'':'disabled'}>Mata</button></div>`).join('')}</div><p>Matat ${c.feeds} gånger ♥</p>`;
- if(id==='stableCare')el.innerHTML+=`<details class="market" ${marketOpen?"open":""}><summary>🎨 Gödselateljén & marknaden</summary><p>👨🏻‍🌾 Hans & 👨🏼‍🌾 Klaus från Tyskland ropar utanför stallet: ”Wir kaufen Kunst! Vi köper din gödselkonst!”</p><p>Gödsel: ${c.manure} · Färgportioner: ${c.paint} · Beställningar: ${c.tickets}</p><p class="care-note">Varje färdig tabell ger en beställning (max 6). Sälj en hög för 2 mynt eller måla en figur och sälj för 6. Färg kostar 2 mynt.</p><div class="care-buttons"><button class="btn" data-paint-buy>Köp färg · 2 🪙</button><button class="btn" data-sell-raw ${c.manure&&c.tickets?'':'disabled'}>Sälj gödsel · +2 🪙</button></div><label>Figur <select id="artShape"><option value="✿">Blomma</option><option value="★">Stjärna</option><option value="♥">Hjärta</option><option value="♞">Häst</option></select></label><label>Färg <select id="artColor"><option value="#d45a98">Rosa</option><option value="#4694cf">Blå</option><option value="#d6ae32">Guld</option><option value="#7c57bc">Lila</option></select></label><button class="btn soft" data-craft ${c.manure&&c.paint&&c.art.length<12?'':'disabled'}>Forma & måla</button><div class="art-shelf">${c.art.map((a,n)=>`<button class="btn" style="border-color:${a.color}" data-sell-art="${n}" ${c.tickets?'':'disabled'}><span style="color:${a.color};font-size:30px">${a.shape}</span><br>Sälj · +6 🪙</button>`).join('')}</div></details>`;
+ el.innerHTML=`<h2>Sköt om ${esc(S.horseName||'din ponny')}</h2><p>${c.piles?'💩 '.repeat(c.piles)+'Mocka innan nästa tabell.':'✨ Rent i stallet – redo att träna!'}</p><p class="care-note">Alla verktyg sparar nu den mockade högen som material till Gödselateljén. Händer kostar upp till 3 mynt, spade 1 mynt och grep är gratis.</p><div class="care-buttons">${[['hands','🙌 Händer'],['shovel','🥄 Liten spade'],['fork','🔱 Grep']].map(([key,label])=>`<button class="btn ${c.tool===key?'soft':''}" data-tool="${key}">${label}${c.tools.includes(key)?(c.tool===key?' ✓':''):' · '+(key==='shovel'?90:300)+' 🪙'}</button>`).join('')}</div><button class="btn primary" data-clean ${c.piles?'':'disabled'}>Mocka en hög${c.piles?' 💩':''}</button><h3>Matförråd</h3><div class="care-food">${Object.entries(Food).map(([key,f])=>`<div><b>${f.icon} ${f.name} · ${c.food[key]} st</b><button class="btn" data-food-buy="${key}">Köp · ${f.price} 🪙</button><button class="btn soft" data-feed="${key}" ${c.food[key]?'':'disabled'}>Mata</button></div>`).join('')}</div><p>Matat ${c.feeds} gånger ♥</p>`;
+ if(id==='stableCare')el.innerHTML+=`<details class="market" ${marketOpen?"open":""}><summary>🎨 Gödselateljén & marknaden</summary><p>👨🏻‍🌾 Hans & 👨🏼‍🌾 Klaus från Tyskland ropar utanför stallet: ”Wir kaufen Kunst! Vi köper din gödselkonst!”</p><p>Gödsel: ${c.manure} · Färgportioner: ${c.paint} · Beställningar: ${c.tickets}</p><p class="care-note">För att måla behövs 1 gödsel + 1 färgportion. Varje mockad hög ger 1 gödsel. Färg kostar 2 mynt. Färdig konst kan säljas för 6 mynt när du har en beställning.</p><div class="care-buttons"><button class="btn" data-paint-buy>Köp färg · 2 🪙</button><button class="btn" data-sell-raw ${c.manure&&c.tickets?'':'disabled'}>Sälj gödsel · +2 🪙</button></div><label>Figur <select id="artShape"><option value="✿">Blomma</option><option value="★">Stjärna</option><option value="♥">Hjärta</option><option value="♞">Häst</option></select></label><label>Färg <select id="artColor"><option value="#d45a98">Rosa</option><option value="#4694cf">Blå</option><option value="#d6ae32">Guld</option><option value="#7c57bc">Lila</option></select></label><button class="btn soft" data-craft ${c.art.length>=12?'disabled':''}>Forma & måla · 1 gödsel + 1 färg</button><div class="art-shelf">${c.art.map((a,n)=>`<button class="btn" style="border-color:${a.color}" data-sell-art="${n}" ${c.tickets?'':'disabled'}><span style="color:${a.color};font-size:30px">${a.shape}</span><br>Sälj · +6 🪙</button>`).join('')}</div></details>`;
  el.querySelectorAll('[data-tool]').forEach(b=>b.onclick=()=>careAction('tool',b.dataset.tool));
  el.querySelector('[data-clean]').onclick=()=>careAction('clean');
  el.querySelectorAll('[data-food-buy]').forEach(b=>b.onclick=()=>careAction('food',b.dataset.foodBuy));
@@ -97,12 +77,12 @@ function careRender(){
 function careAction(action,key){
  const c=S.care;let message='';const pay=n=>{if(S.coins<n){toast('Träna fler tabeller för att tjäna mynt.');return false;}S.coins-=n;return true;};
  if(action==='tool'){if(!['hands','shovel','fork'].includes(key))return;if(!c.tools.includes(key)){if(!pay(key==='shovel'?90:300))return;c.tools.push(key);}c.tool=key;}
- if(action==='clean'){if(!c.piles)return;c.piles--;const cost=Math.min(S.coins,c.tool==='hands'?3:c.tool==='shovel'?1:0);S.coins-=cost;if(c.tool==='fork')c.manure++;message=c.tool==='fork'?'Rent! Gödseln ligger i förrådet.':`Rent och nytvättat! −${cost} mynt.`;c.lastPoop=Date.now();}
+ if(action==='clean'){if(!c.piles)return;c.piles--;const cost=Math.min(S.coins,c.tool==='hands'?3:c.tool==='shovel'?1:0);S.coins-=cost;c.manure=Math.min(99,c.manure+1);message=`Rent! +1 gödsel till ateljén${cost?' · −'+cost+' mynt':''}.`;c.lastPoop=Date.now();}
  if(action==='food'){if(!Food[key]||c.food[key]>=99||!pay(Food[key].price))return;c.food[key]++;}
  if(action==='feed'){if(!Food[key]||!c.food[key])return;c.food[key]--;c.feeds++;message=`${S.horseName||'Ponnyn'} mumsar ${Food[key].name.toLowerCase()}! ♥`;Sound.play('horse');}
- if(action==='paint'){if(c.paint>=99||!pay(2))return;c.paint++;}
+ if(action==='paint'){if(c.paint>=99||!pay(2))return;c.paint++;message='Färg köpt! +1 färgportion.';}
  if(action==='raw'){if(!c.manure||!c.tickets)return;c.manure--;c.tickets--;S.coins+=2;message='Danke! +2 mynt';}
- if(action==='craft'){if(!c.manure||!c.paint||c.art.length>=12)return;c.manure--;c.paint--;c.art.push({shape:$('artShape').value,color:$('artColor').value});message='Din figur är klar att sälja!';}
+ if(action==='craft'){if(c.art.length>=12)return toast('Hyllan är full. Sälj en figur först.');if(!c.manure)return toast('Mocka en hög först – varje hög ger 1 gödsel.');if(!c.paint)return toast('Köp en färgportion först.');c.manure--;c.paint--;c.art.push({shape:$('artShape').value,color:$('artColor').value});message='Figuren är målad och klar!';}
  if(action==='art'){if(!c.art[key]||!c.tickets)return;c.art.splice(key,1);c.tickets--;S.coins+=6;message='Wunderbar! Såld för 6 mynt.';}
  save();header();careRender();for(const id of ['homeScene','stableScene'])$(id).innerHTML=scene();if(message)toast(message);
 }
