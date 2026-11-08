@@ -52,7 +52,7 @@ const Economy={
   s.economyVersion=4;
   return s;
  },
- reward(mode,correct,first,passed){return Math.floor(correct/2)+(passed?(first?15:7):0);}
+ reward(mode,correct,first,passed){return mode==='challenge'&&passed?500:Math.floor(correct/2);}
 };
 const Food={carrot:{name:'Morot',icon:'🥕',price:8},apple:{name:'Äpple',icon:'🍎',price:12},hay:{name:'Höportion',icon:'🌾',price:5}};
 function careTick(){const c=S.care;if(screen==='game')return;if(Date.now()-c.lastPoop>=240000){c.piles=Math.min(3,c.piles+1);c.lastPoop=Date.now();save();}}
